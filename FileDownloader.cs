@@ -513,10 +513,12 @@ namespace wyUpdate.Downloader
 
             try
             {
+                // commented out because of 550 error when executing SIZE. see https://stackoverflow.com/questions/16197338/c-sharp-ftp-size-command-doesnt-work-on-all-ftp-servers                
+                /*
                 if (req is FtpWebRequest)
                 {
                     // get the file size for FTP files
-                    req.Method = WebRequestMethods.Ftp.GetFileSize;
+                    req.Method = WebRequestMethods.Ftp.GetFileSize;                    
                     downloadData.response = req.GetResponse();
                     downloadData.GetFileSize();
 
@@ -528,7 +530,10 @@ namespace wyUpdate.Downloader
                 {
                     downloadData.response = req.GetResponse();
                     downloadData.GetFileSize();
-                }
+                }*/
+
+                downloadData.response = req.GetResponse();
+                downloadData.GetFileSize();
             }
             catch (Exception e)
             {
