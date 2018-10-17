@@ -129,9 +129,9 @@ namespace wyUpdate.Common
                 RequestReceived(this, data.Action, step);
         }
 
-        public void SendProgress(int progress, UpdateStep step)
+        public void SendProgress(int progress, UpdateStep step, string url=null)
         {
-            pipeServer.SendMessage(new UpdateHelperData(Response.Progress, step, progress).GetByteArray());
+            pipeServer.SendMessage(new UpdateHelperData(Response.Progress, step, progress, url).GetByteArray());
         }
 
         public void SendSuccess(string extraData1, string extraData2, bool ed2IsRtf)

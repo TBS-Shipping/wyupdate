@@ -353,9 +353,9 @@ namespace wyUpdate
                     if (log != null)
                     {
                         if (frameNum == Frame.UpdatedSuccessfully)
-                            log.Write("Updated successfully.");
+                            log.Info("Updated successfully.");
                         else
-                            log.Write(error + " - " + errorDetails);
+                            log.Info(error + " - " + errorDetails);
                     }
 
                     // If we're starting a process on error, then start it

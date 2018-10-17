@@ -4,6 +4,7 @@ using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Windows.Forms;
+using NLog;
 using wyDay.Controls;
 using wyUpdate.Common;
 using wyUpdate.Downloader;
@@ -92,7 +93,7 @@ namespace wyUpdate
         /// <summary>This is only set for standalone service updating (not updating a service via the AutomaticUpdater)</summary>
         bool UpdatingFromService;
 
-        Logger log;
+        private Logger log = LogManager.GetCurrentClassLogger();
 
         string forcedLanguageCulture;
 
@@ -130,6 +131,8 @@ namespace wyUpdate
             //add the panelDisplaying to form
             panelDisplaying.TabIndex = 0;
             Controls.Add(panelDisplaying);
+
+            this.log.Info("Creating updater form. SelfUpdateFile: '{0}' ClientFile: '{1}'", selfUpdateFileLoc, clientFileLoc);
 
             try
             {
@@ -426,8 +429,8 @@ namespace wyUpdate
                         SkipUpdateInfo = true;
                         UpdatingFromService = true;
 
-                        if (!string.IsNullOrEmpty(commands["logfile"]))
-                            log = new Logger(commands["logfile"]);
+                        //TODO: not supported ATM. needs to set name of log file in NLog
+                        //if (!string.IsNullOrEmpty(commands["logfile"]))                            
                     }
 
                     if (commands["skipinfo"] != null)

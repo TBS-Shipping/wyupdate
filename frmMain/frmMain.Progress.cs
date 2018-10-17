@@ -20,11 +20,14 @@ namespace wyUpdate
             //update progress bar when between 0 and 100
             if (percentDone > -1 && percentDone < 101)
             {
-                panelDisplaying.Progress = percentDone;
+                panelDisplaying.Progress = percentDone;                
 
                 // send the progress to the AutoUpdate control
                 if (isAutoUpdateMode && autoUpdateStepProcessing != UpdateStep.Install)
-                    updateHelper.SendProgress(unweightedPercent, autoUpdateStepProcessing);
+                {
+                    this.log.Info("Sending progress. Progress: {0} Step: {1} Payload: {2}", unweightedPercent, autoUpdateStepProcessing, payload);
+                    updateHelper.SendProgress(unweightedPercent, autoUpdateStepProcessing, (string) payload);
+                }
             }
 
             // update bottom status

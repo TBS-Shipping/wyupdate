@@ -41,10 +41,12 @@ namespace wyUpdate.Common
         }
 
 #if CLIENT
-        public UpdateHelperData(Response responseType, UpdateStep step, int progress)
+        public UpdateHelperData(Response responseType, UpdateStep step, int progress, string url)
             : this(responseType, step)
         {
             Progress = progress;
+            ExtraData.Add(url);
+            ExtraDataIsRTF.Add(false);
         }
 #endif
 
