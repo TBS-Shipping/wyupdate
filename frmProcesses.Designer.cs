@@ -1,3 +1,5 @@
+using System;
+
 namespace wyUpdate
 {
     partial class frmProcesses
@@ -84,7 +86,7 @@ namespace wyUpdate
             // 
             this.chkProc.Enabled = true;
             this.chkProc.Interval = 2000;
-            this.chkProc.Tick += new System.EventHandler(this.chkProc_Tick);
+            this.chkProc.Tick += new System.EventHandler(this.chkProc_Tick);                        
             // 
             // frmProcesses
             // 

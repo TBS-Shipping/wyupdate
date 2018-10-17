@@ -43,7 +43,7 @@ namespace wyUpdate
         [STAThread]
         static int Main(string[] args)
         {
-            ConfigureNLog(programName + "-${shortdate}.log.txt", LogLevel.Debug);
+            ConfigureNLog("./logs/" + programName + "-${shortdate}.log.txt", LogLevel.Debug);
             _logger.Debug("{0} is ready...", programName);
             Application.EnableVisualStyles();
 

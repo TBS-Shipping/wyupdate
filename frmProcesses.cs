@@ -5,11 +5,13 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
+using NLog;
 
 namespace wyUpdate
 {
     public partial class frmProcesses : Form
     {
+        private readonly Logger _logger = LogManager.GetCurrentClassLogger();
         readonly ClientLanguage clientLang;
         readonly List<FileInfo> filenames;
         List<Process> runningProcesses;
@@ -17,6 +19,8 @@ namespace wyUpdate
         const int SidePadding = 12;
 
         readonly BackgroundWorker bw = new BackgroundWorker();
+        private const int KILLALL_TIMEOUT = 10;
+        private readonly DateTime started = DateTime.Now;
 
         public frmProcesses(List<FileInfo> files, List<Process> rProcesses, ClientLanguage cLang)
         {
@@ -175,6 +179,13 @@ namespace wyUpdate
 
         void closeAll_Click(object sender, EventArgs e)
         {
+            killall();
+        }
+
+        void killall()
+        {
+            this._logger.Info("Killing all {0} processes...", runningProcesses.Count);
+
             for (int i = 0; i < runningProcesses.Count; i++)
             {
                 try
@@ -230,8 +241,15 @@ namespace wyUpdate
 
         void chkProc_Tick(object sender, EventArgs e)
         {
+            if ((DateTime.Now - this.started).Seconds >= KILLALL_TIMEOUT)
+            {
+                this._logger.Info("Timeout is more than {0}s, calling killall()...", KILLALL_TIMEOUT);
+                killall();
+                return;
+            }
+
             if (!bw.IsBusy)
-                bw.RunWorkerAsync();
+                bw.RunWorkerAsync();            
         }
 
         protected override void OnPaint(PaintEventArgs e)
