@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Ionic.Zip;
+using NLog;
 using wyUpdate.Common;
 using wyUpdate.Compression.Vcdiff;
 
@@ -12,6 +13,7 @@ namespace wyUpdate
     partial class InstallUpdate
     {
         public string ExtractPassword;
+        private readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         // unzip the update to the temp folder
         public void RunUnzipProcess()
@@ -191,6 +193,7 @@ namespace wyUpdate
 
         void ExtractUpdateFile()
         {
+            this.logger.Info("Extracting zip file: '{0}'", Filename);
             using (ZipFile zip = ZipFile.Read(Filename))
             {
                 int totalFiles = zip.Entries.Count;
@@ -210,6 +213,7 @@ namespace wyUpdate
                         filesDone++;
                     }
 
+                    this.logger.Info("Extracting zip entry {0} to '{1}'...", e.FileName, OutputDirectory);
                     // if a password is provided use it to extract the updates
                     if (!string.IsNullOrEmpty(ExtractPassword))
                         e.ExtractWithPassword(OutputDirectory, ExtractExistingFileAction.OverwriteSilently, ExtractPassword);

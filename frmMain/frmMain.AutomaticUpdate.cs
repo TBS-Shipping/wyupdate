@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
+using NLog;
 using wyDay.Controls;
 using wyUpdate.Common;
 
@@ -13,6 +15,7 @@ namespace wyUpdate
         readonly UpdateHelper updateHelper = new UpdateHelper();
         bool isAutoUpdateMode;
         string autoUpdateStateFile;
+        private static Logger logger = LogManager.GetCurrentClassLogger();
 
         UpdateStep autoUpdateStepProcessing;
 
@@ -488,15 +491,20 @@ namespace wyUpdate
 
             // C:\Users\USERNAME\wc
             string temp = Path.Combine(userprofile, "wc");
+            logger.Info("Checking path '{0}'...", temp);
 
             // if the folder temp folder doesn't exist, create the folder with hidden attributes
             if (!Directory.Exists(temp))
             {
+                logger.Info("Creating path...");
                 Directory.CreateDirectory(temp);
                 File.SetAttributes(temp, FileAttributes.System | FileAttributes.Hidden);
             }
+            else
+                logger.Info("Path already exists.");
 
             string fullGuidFolder = Path.Combine(temp, guid);
+            logger.Info("Checking GUID path '{0}'...", fullGuidFolder);
 
             // Workaround for the "pyramid of death" bug.
             // Note: This still doesn't address the root cause of the "pyramid of death"
@@ -506,6 +514,7 @@ namespace wyUpdate
             // when a user's app crashed when they were debugging. It was crashing over and over again
             if (Directory.Exists(fullGuidFolder))
             {
+                logger.Info("Creating guid file...");
                 string guidFile = Path.Combine(fullGuidFolder, guid);
 
                 // if the GUID file doesn't already exist then the cache is busted.
@@ -530,6 +539,8 @@ namespace wyUpdate
 
                 return fullGuidFolder;
             }
+            else
+                logger.Info("Path already exists.");
 
             // try to create the smallest possible folder name (using the GUID)
             string closestMatch = null;
@@ -554,9 +565,11 @@ namespace wyUpdate
             // the folder doesn't exist, so we'll create it
             string guidCacheFolder = Path.Combine(temp, guid.Substring(0, closestMatch == null ? 1 : closestMatch.Length + 1));
 
+            logger.Info("Creating guid cache folder at '{0}'...", guidCacheFolder);
             Directory.CreateDirectory(guidCacheFolder);
 
             // create the blank GUID file
+            logger.Info("Creating guid file in cache folder...", guidCacheFolder);
             using (File.Create(Path.Combine(guidCacheFolder, guid))) ;
 
             return guidCacheFolder;

@@ -206,15 +206,36 @@ namespace wyUpdate
                     if (tempDirectory == null)
                         tempDirectory = CreateAutoUpdateTempFolder();
                 }
+                catch (IOException ioException)
+                {
+                    this.log.Error(ioException, "Couldn't create automatic updater temp folder (wc). HResult: 0x{0}", ioException.HResult.ToString("X2"));
+
+                    error = clientLang.GeneralUpdateError;
+                    errorDetails = "Failed to create the automatic updater temp folder: " + ioException.Message;
+
+                    ShowFrame(Frame.Error);
+                    return;
+                }
+                catch (UnauthorizedAccessException authException)
+                {
+                    this.log.Error(authException, "Couldn't create automatic updater temp folder (wc). HResult: 0x{0}", authException.HResult.ToString("X2"));
+
+                    error = clientLang.GeneralUpdateError;
+                    errorDetails = "Failed to create the automatic updater temp folder: " + authException.Message;
+
+                    ShowFrame(Frame.Error);
+                    return;
+                }
                 catch (Exception ex)
                 {
+                    this.log.Error(ex, "Couldn't create automatic updater temp folder (wc).");
                     error = clientLang.GeneralUpdateError;
                     errorDetails = "Failed to create the automatic updater temp folder: " + ex.Message;
 
                     ShowFrame(Frame.Error);
                     return;
                 }
-                
+
                 try
                 {
                     // load the previous auto update state from "autoupdate"

@@ -25,7 +25,7 @@ namespace wyUpdate
                 // send the progress to the AutoUpdate control
                 if (isAutoUpdateMode && autoUpdateStepProcessing != UpdateStep.Install)
                 {
-                    this.log.Info("Sending progress. Progress: {0} Step: {1} Payload: {2}", unweightedPercent, autoUpdateStepProcessing, payload);
+                    this.log.Info("Sending progress. Progress: {0} Step: {1} Payload: {2} Status: {3}", unweightedPercent, autoUpdateStepProcessing, payload, status);
                     updateHelper.SendProgress(unweightedPercent, autoUpdateStepProcessing, (string) payload);
                 }
             }
@@ -171,7 +171,14 @@ namespace wyUpdate
                         }
 
                         error = clientLang.GeneralUpdateError;
-                        errorDetails = ((Exception)payload).Message;
+                        var exception = payload as Exception;
+                        errorDetails = exception?.Message;
+                        var ioException = exception as IOException;
+
+                        if(ioException == null)
+                            log.Error(exception, "Update failed");
+                        else
+                            log.Error(ioException, "Update failed because of IOException. HResult: {0}", ioException.HResult.ToString("X2"));
                     }
                 }
 
