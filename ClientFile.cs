@@ -4,8 +4,9 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Text;
-using Ionic.Zip;
 
 namespace wyUpdate.Common
 {
@@ -360,13 +361,11 @@ namespace wyUpdate.Common
 #else
         public void OpenClientFile(string m_Filename, ClientLanguage lang, string forcedCulture, string updatePathVar, string customUrlArgs)
         {
-            using (ZipFile zip = ZipFile.Read(m_Filename))
+            using (ZipArchive zip = ZipFile.OpenRead(m_Filename))
             {
                 // load the client details (image filenames, languages, etc.)
-                using (MemoryStream ms = new MemoryStream())
+                using (Stream ms = zip.Entries.First(e => e.Name == "iuclient.iuc").ToMemoryStream())
                 {
-                    zip["iuclient.iuc"].Extract(ms);
-
                     //read in the client data
                     LoadClientData(ms, updatePathVar, customUrlArgs);
                 }
@@ -374,10 +373,8 @@ namespace wyUpdate.Common
                 // load the top image
                 if (!string.IsNullOrEmpty(TopImageFilename))
                 {
-                    using (MemoryStream ms = new MemoryStream())
+                    using (Stream ms = zip.Entries.First(e => e.Name == TopImageFilename).ToMemoryStream())
                     {
-                        zip[TopImageFilename].Extract(ms);
-
                         // convert the bytes to an images
                         TopImage = Image.FromStream(ms, true);
                     }
@@ -386,10 +383,8 @@ namespace wyUpdate.Common
                 // load the side image
                 if (!string.IsNullOrEmpty(SideImageFilename))
                 {
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        zip[SideImageFilename].Extract(ms);
-
+                    using (Stream ms = zip.Entries.First(e => e.Name == SideImageFilename).ToMemoryStream())
+                    {                        
                         // convert the bytes to an images
                         SideImage = Image.FromStream(ms, true);
                     }
@@ -400,9 +395,8 @@ namespace wyUpdate.Common
                 // if the languages has a culture with a null name, load that file
                 if (Languages.Count == 1 && Languages.Contains(string.Empty))
                 {
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        zip[((LanguageCulture)Languages[string.Empty]).Filename].Extract(ms);
+                    using (Stream ms = zip.Entries.First(e => e.Name == ((LanguageCulture)Languages[string.Empty]).Filename).ToMemoryStream())
+                    {                        
                         lang.Open(ms);
                     }
                 }
@@ -435,9 +429,8 @@ namespace wyUpdate.Common
 
                     if (useLang != null && !string.IsNullOrEmpty(useLang.Filename))
                     {
-                        using (MemoryStream ms = new MemoryStream())
-                        {
-                            zip[useLang.Filename].Extract(ms);
+                        using (Stream ms = zip.Entries.First(e => e.Name == useLang.Filename).ToMemoryStream())
+                        {                            
                             lang.Open(ms);
                         }
                     }
@@ -456,29 +449,22 @@ namespace wyUpdate.Common
                 if (File.Exists(outputFilename))
                     File.Delete(outputFilename);
 
-                using (ZipFile zip = new ZipFile(outputFilename))
-                {
-                    zip.AlternateEncoding = Encoding.UTF8;
-                    zip.AlternateEncodingUsage = ZipOption.AsNecessary;
-
-                    // 0 (store only) to 9 (best compression)
-                    zip.CompressionLevel = Ionic.Zlib.CompressionLevel.Level7;
-
-                    ZipEntry entry;
+                using (ZipArchive zip = ZipFile.Open(outputFilename, ZipArchiveMode.Create, Encoding.UTF8))
+                {                                        
+                    ZipArchiveEntry entry;
                     for (int i = 0; i < files.Count; i++)
                     {
-                        entry = zip.AddFile(files[i].Filename, "");
-                        entry.FileName = files[i].RelativePath;
-                        entry.LastModified = File.GetLastWriteTime(files[i].Filename);
+                        entry = zip.CreateEntryFromFile(files[i].Filename, files[i].RelativePath, CompressionLevel.Optimal);
+                        entry.LastWriteTime = File.GetLastWriteTime(files[i].Filename);
                     }
 
                     using (Stream clientDets = SaveClientFile())
                     {
-                        //add the client file
-                        entry = zip.AddEntry("iuclient.iuc", clientDets);
-                        entry.LastModified = DateTime.Now;
-                        zip.Save();
-                    }
+                        //add the client file                        
+                        entry = zip.CreateEntry("iuclient.iuc", CompressionLevel.Optimal);
+                        clientDets.CopyTo(entry.Open());
+                        entry.LastWriteTime = DateTime.Now;
+                    }                    
                 }
             }
             catch (Exception ex)

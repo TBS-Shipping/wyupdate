@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.ServiceProcess;
 using System.Text;
-using Ionic.Zip;
 using wyUpdate.Common;
 
 namespace wyUpdate
@@ -740,13 +741,11 @@ namespace wyUpdate
         {
             try
             {
-                using (ZipFile zip = ZipFile.Read(clientFile))
+                using (ZipArchive zip = ZipFile.OpenRead(clientFile))
                 {
-                    using (MemoryStream ms = new MemoryStream())
+                    using (Stream ms = zip.Entries.First(e => e.Name == "uninstall.dat").ToMemoryStream())
                     {
-                        //read in the uninstall data
-                        zip["uninstall.dat"].Extract(ms);
-
+                        //read in the uninstall data                        
                         LoadUninstallData(ms, uninstallFiles, uninstallFolders, uninstallRegistry, comDllsToUnreg, servicesToStop);
                     }
                 }

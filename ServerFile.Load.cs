@@ -1,7 +1,8 @@
 ﻿using System;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Text;
-using Ionic.Zip;
 
 namespace wyUpdate.Common
 {
@@ -36,18 +37,14 @@ namespace wyUpdate.Common
                 // decompress the "actual" server file to memory
                 fs.Close();
 
-                using (ZipFile zip = ZipFile.Read(fileName))
+                using (ZipArchive zip = ZipFile.OpenRead(fileName))
                 {
-                    fs = new MemoryStream();
+                    fs = zip.Entries.First(e => e.Name == "0").ToMemoryStream();
+                    fs.Position = 0;
 
-                    zip["0"].Extract(fs);
+                    // Read the first 7 bytes of identification data
+                    fs.Read(fileIDBytes, 0, 7);
                 }
-
-
-                fs.Position = 0;
-
-                // Read the first 7 bytes of identification data
-                fs.Read(fileIDBytes, 0, 7);
             }
 
 

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.ComponentModel;
 using System.IO;
+using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Ionic.Zip;
 using NLog;
 using wyUpdate.Common;
 using wyUpdate.Compression.Vcdiff;
@@ -124,10 +124,10 @@ namespace wyUpdate
                     catch { }
                 }
             }
-            catch (BadPasswordException ex)
+            /*catch (BadPasswordException ex)
             {
                 except = new BadPasswordException("Could not install the encrypted update because the password did not match.");
-            }
+            }*/
             catch (Exception ex)
             {
                 except = ex;
@@ -194,12 +194,12 @@ namespace wyUpdate
         void ExtractUpdateFile()
         {
             this.logger.Info("Extracting zip file: '{0}'", Filename);
-            using (ZipFile zip = ZipFile.Read(Filename))
+            using (ZipArchive zip = ZipFile.OpenRead(Filename))
             {
                 int totalFiles = zip.Entries.Count;
                 int filesDone = 0;
 
-                foreach (ZipEntry e in zip)
+                foreach (ZipArchiveEntry e in zip.Entries)
                 {
                     if (IsCancelled())
                         break; //stop outputting new files
@@ -208,17 +208,18 @@ namespace wyUpdate
                     {
                         int unweightedPercent = totalFiles > 0 ? (filesDone*100)/totalFiles : 0;
 
-                        bw.ReportProgress(0, new object[] { GetRelativeProgess(1, unweightedPercent), unweightedPercent, "Extracting " + Path.GetFileName(e.FileName), ProgressStatus.None, null });
+                        bw.ReportProgress(0, new object[] { GetRelativeProgess(1, unweightedPercent), unweightedPercent, "Extracting " + Path.GetFileName(e.Name), ProgressStatus.None, null });
 
                         filesDone++;
                     }
 
-                    this.logger.Info("Extracting zip entry {0} to '{1}'...", e.FileName, OutputDirectory);
+                    this.logger.Info("Extracting zip entry {0} to '{1}'...", e.Name, OutputDirectory);
                     // if a password is provided use it to extract the updates
                     if (!string.IsNullOrEmpty(ExtractPassword))
-                        e.ExtractWithPassword(OutputDirectory, ExtractExistingFileAction.OverwriteSilently, ExtractPassword);
+                        //e.ExtractWithPassword(OutputDirectory, ExtractExistingFileAction.OverwriteSilently, ExtractPassword);
+                        throw new Exception("Zip archives with passwords are not supported at this time");
                     else
-                        e.Extract(OutputDirectory, ExtractExistingFileAction.OverwriteSilently);
+                        e.ExtractToFile(OutputDirectory, true);
                 }
             }
         }

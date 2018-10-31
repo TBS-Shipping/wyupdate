@@ -649,7 +649,7 @@ namespace wyUpdate
 #endif
 
 #if CLIENT
-        public void Open(MemoryStream ms)
+        public void Open(Stream ms)
         {
             ms.Position = 0;
 
