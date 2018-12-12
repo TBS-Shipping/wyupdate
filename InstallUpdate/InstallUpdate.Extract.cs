@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 using System.Threading;
 using NLog;
 using wyUpdate.Common;
@@ -193,7 +194,39 @@ namespace wyUpdate
 
         void ExtractUpdateFile()
         {
-            this.logger.Info("Extracting zip file: '{0}'", Filename);
+            this.logger.Info("Extracting zip file: '{0}' to '{1}'", Filename, OutputDirectory);
+
+            /*
+            var dirInfo = new DirectoryInfo(OutputDirectory);
+            this.logger.Info("Output dir atts: " + dirInfo.Attributes.ToString());
+            var acl = dirInfo.GetAccessControl();
+            try
+            {
+                this.logger.Info("ACL dump");
+                this.logger.Info("RightType: {0} RuleType: {1} AccessRulesProtected: {2} AccessRulesCanonical: {3} AuditRulesCanonical: {4} AuditRulesProtected: {5}", acl.AccessRightType, acl.AccessRuleType, acl.AreAccessRulesCanonical, acl.AreAccessRulesProtected, acl.AreAuditRulesCanonical, acl.AreAuditRulesProtected);
+                this.logger.Info("Access rules:");
+                Type targetType = typeof(System.Security.Principal.NTAccount);
+
+                foreach (AuthorizationRule rule in acl.GetAccessRules(true, true, targetType))
+                {
+                    this.logger.Info("Id: {0} Inheritance: {1} IsInherited: {2} PropagationFlags: {3}", rule.IdentityReference.Value, rule.InheritanceFlags, rule.IsInherited, rule.PropagationFlags);
+                }
+
+                this.logger.Info("Audit rules:");
+
+                foreach (AuthorizationRule rule in acl.GetAuditRules(true, true, targetType))
+                {
+                    this.logger.Info("Id: {0} Inheritance: {1} IsInherited: {2} PropagationFlags: {3}", rule.IdentityReference.Value, rule.InheritanceFlags, rule.IsInherited, rule.PropagationFlags);
+                }
+
+                this.logger.Info("Sddl desc: " + acl.GetSecurityDescriptorSddlForm(AccessControlSections.All));
+                this.logger.Info("Owner: {0} Group: {1}", acl.GetOwner(targetType).Value, acl.GetGroup(targetType).Value);
+            }
+            catch (Exception e)
+            {
+                this.logger.Error(e, "Couldn't get ACL");
+            }*/
+
             using (ZipArchive zip = ZipFile.OpenRead(Filename))
             {
                 int totalFiles = zip.Entries.Count;
@@ -213,13 +246,29 @@ namespace wyUpdate
                         filesDone++;
                     }
 
-                    this.logger.Info("Extracting zip entry {0} to '{1}'...", e.Name, OutputDirectory);
+                    var outputFilePath = Path.Combine(OutputDirectory, e.FullName);
+                    var outputFileDir = Path.GetDirectoryName(outputFilePath);
+
+                    if(!string.IsNullOrEmpty(outputFileDir))
+                        Directory.CreateDirectory(outputFileDir);
+                    this.logger.Info("Extracting zip entry {0} to '{1}'...", e.Name, outputFilePath);
                     // if a password is provided use it to extract the updates
                     if (!string.IsNullOrEmpty(ExtractPassword))
                         //e.ExtractWithPassword(OutputDirectory, ExtractExistingFileAction.OverwriteSilently, ExtractPassword);
                         throw new Exception("Zip archives with passwords are not supported at this time");
                     else
-                        e.ExtractToFile(OutputDirectory, true);
+                    {
+                        try
+                        {
+                            e.ExtractToFile(outputFilePath, true);
+                        }
+                        catch (UnauthorizedAccessException exception)
+                        {
+                            logger.Error(exception,"Unauthorized access exception caught.");
+                            throw;
+                        }
+                        
+                    }
                 }
             }
         }

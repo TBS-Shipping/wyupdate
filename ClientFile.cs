@@ -454,16 +454,14 @@ namespace wyUpdate.Common
                     ZipArchiveEntry entry;
                     for (int i = 0; i < files.Count; i++)
                     {
-                        entry = zip.CreateEntryFromFile(files[i].Filename, files[i].RelativePath, CompressionLevel.Optimal);
-                        entry.LastWriteTime = File.GetLastWriteTime(files[i].Filename);
+                        zip.CreateEntryFromFile(files[i].Filename, files[i].RelativePath, CompressionLevel.Optimal);
                     }
 
                     using (Stream clientDets = SaveClientFile())
                     {
                         //add the client file                        
                         entry = zip.CreateEntry("iuclient.iuc", CompressionLevel.Optimal);
-                        clientDets.CopyTo(entry.Open());
-                        entry.LastWriteTime = DateTime.Now;
+                        clientDets.CopyTo(entry.Open());                        
                     }                    
                 }
             }
