@@ -2,6 +2,7 @@
 using System.IO;
 using wyUpdate.Common;
 using wyUpdate.Downloader;
+using Serilog;
 
 namespace wyUpdate
 {
@@ -149,7 +150,7 @@ namespace wyUpdate
         void LoadServerFile(bool setChangesText)
         {
             //load the server file
-            this.log.Info("Loading server file. Location: '{0}' Update path: '{1}'", serverFileLoc, updatePathVar);
+            Log.Information("Loading server file. Location: '{0}' Update path: '{1}'", serverFileLoc, updatePathVar);
             ServerFile = ServerFile.Load(serverFileLoc, updatePathVar, customUrlArgs);
 
             clientLang.NewVersion = ServerFile.NewVersion;

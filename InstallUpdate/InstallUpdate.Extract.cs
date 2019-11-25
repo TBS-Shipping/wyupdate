@@ -5,7 +5,7 @@ using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Threading;
-using NLog;
+using Serilog;
 using wyUpdate.Common;
 using wyUpdate.Compression.Vcdiff;
 
@@ -13,8 +13,7 @@ namespace wyUpdate
 {
     partial class InstallUpdate
     {
-        public string ExtractPassword;
-        private readonly Logger logger = LogManager.GetCurrentClassLogger();
+        public string ExtractPassword;        
 
         // unzip the update to the temp folder
         public void RunUnzipProcess()
@@ -31,13 +30,15 @@ namespace wyUpdate
             Exception except = null;
 
             string updtDetailsFilename = Path.Combine(TempDirectory, "updtdetails.udt");
+            Log.Information("updtDetailsFilename: " + updtDetailsFilename);
 
             try
             {
+                Log.Information("Extracting update file...");
                 ExtractUpdateFile();
 
                 try
-                {
+                {                    
                     // remove update file (it's no longer needed)
                     File.Delete(Filename);
                 }
@@ -47,6 +48,7 @@ namespace wyUpdate
                 // Try to load the update details file
                 if (File.Exists(updtDetailsFilename))
                 {
+                    Log.Information("Loading update file...");
                     UpdtDetails = UpdateDetails.Load(updtDetailsFilename);
                 }
                 else
@@ -55,15 +57,19 @@ namespace wyUpdate
 
                 if (Directory.Exists(Path.Combine(TempDirectory, "patches")))
                 {
+                    Log.Information("Applying patches...");
+
                     // patch the files
                     foreach (UpdateFile file in UpdtDetails.UpdateFiles)
-                    {
+                    {                        
                         if (file.DeltaPatchRelativePath != null)
                         {
                             if (IsCancelled())
                                 break;
 
                             string tempFilename = Path.Combine(TempDirectory, file.RelativePath);
+
+                            Log.Information("Applying patch '{0}'...", tempFilename);
 
                             // create the directory to store the patched file
                             if (!Directory.Exists(Path.GetDirectoryName(tempFilename)))
@@ -73,16 +79,22 @@ namespace wyUpdate
                             {
                                 try
                                 {
-                                    using (FileStream original = File.Open(FixUpdateDetailsPaths(file.RelativePath), FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                                    using (FileStream patch = File.Open(Path.Combine(TempDirectory, file.DeltaPatchRelativePath), FileMode.Open, FileAccess.Read, FileShare.Read))
+                                    string originalPath = FixUpdateDetailsPaths(file.RelativePath);
+                                    string patchPath = Path.Combine(TempDirectory, file.DeltaPatchRelativePath);
+
+                                    using (FileStream original = File.Open(originalPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                                    using (FileStream patch = File.Open(patchPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                                     using (FileStream target = File.Open(tempFilename, FileMode.OpenOrCreate, FileAccess.ReadWrite))
                                     {
+                                        Log.Information("Vcdiff -> Original: '{0}' Patch: '{1}' Target: '{2}'...", originalPath, patchPath, tempFilename);
                                         VcdiffDecoder.Decode(original, patch, target, file.NewFileAdler32);
                                     }
                                 }
                                 catch (IOException IOEx)
                                 {
                                     int HResult = Marshal.GetHRForException(IOEx);
+
+                                    Log.Error(IOEx, "Vcdiff failed with error code: {0}", HResult);
 
                                     // if sharing violation
                                     if ((HResult & 0xFFFF) == 32)
@@ -194,37 +206,37 @@ namespace wyUpdate
 
         void ExtractUpdateFile()
         {
-            this.logger.Info("Extracting zip file: '{0}' to '{1}'", Filename, OutputDirectory);
+            Log.Information("Extracting zip file: '{0}' to '{1}'", Filename, OutputDirectory);
 
             /*
             var dirInfo = new DirectoryInfo(OutputDirectory);
-            this.logger.Info("Output dir atts: " + dirInfo.Attributes.ToString());
+            Log.Information("Output dir atts: " + dirInfo.Attributes.ToString());
             var acl = dirInfo.GetAccessControl();
             try
             {
-                this.logger.Info("ACL dump");
-                this.logger.Info("RightType: {0} RuleType: {1} AccessRulesProtected: {2} AccessRulesCanonical: {3} AuditRulesCanonical: {4} AuditRulesProtected: {5}", acl.AccessRightType, acl.AccessRuleType, acl.AreAccessRulesCanonical, acl.AreAccessRulesProtected, acl.AreAuditRulesCanonical, acl.AreAuditRulesProtected);
-                this.logger.Info("Access rules:");
+                Log.Information("ACL dump");
+                Log.Information("RightType: {0} RuleType: {1} AccessRulesProtected: {2} AccessRulesCanonical: {3} AuditRulesCanonical: {4} AuditRulesProtected: {5}", acl.AccessRightType, acl.AccessRuleType, acl.AreAccessRulesCanonical, acl.AreAccessRulesProtected, acl.AreAuditRulesCanonical, acl.AreAuditRulesProtected);
+                Log.Information("Access rules:");
                 Type targetType = typeof(System.Security.Principal.NTAccount);
 
                 foreach (AuthorizationRule rule in acl.GetAccessRules(true, true, targetType))
                 {
-                    this.logger.Info("Id: {0} Inheritance: {1} IsInherited: {2} PropagationFlags: {3}", rule.IdentityReference.Value, rule.InheritanceFlags, rule.IsInherited, rule.PropagationFlags);
+                    Log.Information("Id: {0} Inheritance: {1} IsInherited: {2} PropagationFlags: {3}", rule.IdentityReference.Value, rule.InheritanceFlags, rule.IsInherited, rule.PropagationFlags);
                 }
 
-                this.logger.Info("Audit rules:");
+                Log.Information("Audit rules:");
 
                 foreach (AuthorizationRule rule in acl.GetAuditRules(true, true, targetType))
                 {
-                    this.logger.Info("Id: {0} Inheritance: {1} IsInherited: {2} PropagationFlags: {3}", rule.IdentityReference.Value, rule.InheritanceFlags, rule.IsInherited, rule.PropagationFlags);
+                    Log.Information("Id: {0} Inheritance: {1} IsInherited: {2} PropagationFlags: {3}", rule.IdentityReference.Value, rule.InheritanceFlags, rule.IsInherited, rule.PropagationFlags);
                 }
 
-                this.logger.Info("Sddl desc: " + acl.GetSecurityDescriptorSddlForm(AccessControlSections.All));
-                this.logger.Info("Owner: {0} Group: {1}", acl.GetOwner(targetType).Value, acl.GetGroup(targetType).Value);
+                Log.Information("Sddl desc: " + acl.GetSecurityDescriptorSddlForm(AccessControlSections.All));
+                Log.Information("Owner: {0} Group: {1}", acl.GetOwner(targetType).Value, acl.GetGroup(targetType).Value);
             }
             catch (Exception e)
             {
-                this.logger.Error(e, "Couldn't get ACL");
+                Log.Error(e, "Couldn't get ACL");
             }*/
 
             using (ZipArchive zip = ZipFile.OpenRead(Filename))
@@ -251,7 +263,7 @@ namespace wyUpdate
 
                     if(!string.IsNullOrEmpty(outputFileDir))
                         Directory.CreateDirectory(outputFileDir);
-                    this.logger.Info("Extracting zip entry {0} to '{1}'...", e.Name, outputFilePath);
+                    Log.Information("Extracting zip entry {0} to '{1}'...", e.Name, outputFilePath);
                     // if a password is provided use it to extract the updates
                     if (!string.IsNullOrEmpty(ExtractPassword))
                         //e.ExtractWithPassword(OutputDirectory, ExtractExistingFileAction.OverwriteSilently, ExtractPassword);
@@ -264,7 +276,7 @@ namespace wyUpdate
                         }
                         catch (UnauthorizedAccessException exception)
                         {
-                            logger.Error(exception,"Unauthorized access exception caught.");
+                            Log.Error(exception,"Unauthorized access exception caught.");
                             throw;
                         }
                         

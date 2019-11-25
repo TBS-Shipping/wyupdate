@@ -5,13 +5,12 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
-using NLog;
+using Serilog;
 
 namespace wyUpdate
 {
     public partial class frmProcesses : Form
-    {
-        private readonly Logger _logger = LogManager.GetCurrentClassLogger();
+    {        
         readonly ClientLanguage clientLang;
         readonly List<FileInfo> filenames;
         List<Process> runningProcesses;
@@ -184,7 +183,7 @@ namespace wyUpdate
 
         void killall()
         {
-            this._logger.Info("Killing all {0} processes...", runningProcesses.Count);
+            Log.Information("Killing all {0} processes...", runningProcesses.Count);
 
             for (int i = 0; i < runningProcesses.Count; i++)
             {
@@ -243,7 +242,7 @@ namespace wyUpdate
         {
             if ((DateTime.Now - this.started).Seconds >= KILLALL_TIMEOUT)
             {
-                this._logger.Info("Timeout is more than {0}s, calling killall()...", KILLALL_TIMEOUT);
+                Log.Information("Timeout is more than {0}s, calling killall()...", KILLALL_TIMEOUT);
                 killall();
                 return;
             }

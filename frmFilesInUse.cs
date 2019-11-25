@@ -1,15 +1,17 @@
-﻿using System;
+﻿using Serilog;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace wyUpdate
 {
     public partial class frmFilesInUse : Form
-    {
+    {        
         [StructLayout(LayoutKind.Sequential)]
         struct RM_UNIQUE_PROCESS
         {
@@ -72,6 +74,9 @@ namespace wyUpdate
                                     [In, Out] RM_PROCESS_INFO[] rgAffectedApps,
                                     ref uint lpdwRebootReasons);
 
+        [DllImport("Kernel32")]
+        private extern static bool CloseHandle(IntPtr handle);
+
 
         const int SidePadding = 12;
         readonly ClientLanguage clientLang;
@@ -106,7 +111,42 @@ namespace wyUpdate
                     runningProcesses = GetProcessesUsingFiles(new[] {filename});
                 }
                 catch { }
+                /*
+                var thisProcessName = Assembly.GetExecutingAssembly().GetName().Name;
+                Log.Information("Looking for processes owned by '{0}'...", thisProcessName);
+                List<Process> closedProcesses = new List<Process>();
 
+                foreach (var process in runningProcesses)
+                {
+                    if (!string.Equals(process.ProcessName, thisProcessName, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        Log.Information("{0} is owned by '{1}'...", process.MainWindowTitle, process.ProcessName);
+                        continue;
+                    }
+
+                    Log.Information("Found handle owned by us: '{0}' ({1}). Attempting to close...", process.MainWindowTitle, process.Handle);
+
+                    try
+                    {
+                        var result = CloseHandle(process.Handle);
+
+                        if (result)
+                        {
+                            Log.Information("Successfully closed handle!");
+                            closedProcesses.Add(process);
+                        }
+                        else
+                            Log.Information("Failed to closed handle!");
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error(e, "Error while trying to close handle");
+                    }
+                }
+
+                foreach (var closed in closedProcesses)
+                    runningProcesses.Remove(closed);
+                */
                 if (runningProcesses != null && runningProcesses.Count > 0)
                 {
                     UpdateList();

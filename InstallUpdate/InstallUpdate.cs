@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using Microsoft.Win32;
 using wyUpdate.Common;
+using Serilog;
 
 namespace wyUpdate
 {
@@ -194,6 +195,7 @@ namespace wyUpdate
             //get all files for the current directory
             FileInfo[] tempFiles = tempDirInf.GetFiles("*");
 
+            Log.Information("Updating files...");
 
             for (int i = 0; i < tempFiles.Length; i++)
             {
@@ -204,7 +206,7 @@ namespace wyUpdate
                 bw.ReportProgress(0, new object[] { GetRelativeProgess(4, unweightedProgress), unweightedProgress, "Updating " + tempFiles[i].Name, ProgressStatus.None, null });
 
                 if (File.Exists(Path.Combine(progDir, tempFiles[i].Name)))
-                {
+                {                    
                     int retriedTimes = 0;
 
                     while (true)
@@ -212,6 +214,8 @@ namespace wyUpdate
                         try
                         {
                             string origFile = Path.Combine(progDir, tempFiles[i].Name);
+                            Log.Information("Updating '{0}'...", origFile);
+
 
                             // backup
                             File.Copy(origFile, Path.Combine(backupFolder, tempFiles[i].Name), true);
@@ -224,6 +228,7 @@ namespace wyUpdate
                             if (resetAttributes)
                                 File.SetAttributes(origFile, FileAttributes.Normal);
 
+                            Log.Information("Replacing '{0}' with '{1}'...", origFile, tempFiles[i].FullName);
                             // replace
                             File.Copy(tempFiles[i].FullName, origFile, true);
 
@@ -233,6 +238,8 @@ namespace wyUpdate
                         catch (IOException IOEx)
                         {
                             int HResult = Marshal.GetHRForException(IOEx);
+
+                            Log.Error(IOEx, "Error while updating file: {0}", HResult);
 
                             int hr = (HResult & 0xFFFF);
 

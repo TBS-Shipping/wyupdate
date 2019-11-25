@@ -4,7 +4,7 @@ using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Windows.Forms;
-using NLog;
+using Serilog;
 using wyDay.Controls;
 using wyUpdate.Common;
 using wyUpdate.Downloader;
@@ -91,9 +91,7 @@ namespace wyUpdate
         string StartOnErrArgs;
 
         /// <summary>This is only set for standalone service updating (not updating a service via the AutomaticUpdater)</summary>
-        bool UpdatingFromService;
-
-        private Logger log = LogManager.GetCurrentClassLogger();
+        bool UpdatingFromService;        
 
         string forcedLanguageCulture;
 
@@ -132,7 +130,7 @@ namespace wyUpdate
             panelDisplaying.TabIndex = 0;
             Controls.Add(panelDisplaying);
 
-            this.log.Info("Creating updater form. SelfUpdateFile: '{0}' ClientFile: '{1}'", selfUpdateFileLoc, clientFileLoc);
+            Log.Information("Creating updater form. SelfUpdateFile: '{0}' ClientFile: '{1}'", selfUpdateFileLoc, clientFileLoc);
 
             try
             {
@@ -208,7 +206,7 @@ namespace wyUpdate
                 }
                 catch (IOException ioException)
                 {
-                    this.log.Error(ioException, "Couldn't create automatic updater temp folder (wc). HResult: 0x{0}", ioException.HResult.ToString("X2"));
+                    Log.Error(ioException, "Couldn't create automatic updater temp folder (wc). HResult: 0x{0}", ioException.HResult.ToString("X2"));
 
                     error = clientLang.GeneralUpdateError;
                     errorDetails = "Failed to create the automatic updater temp folder: " + ioException.Message;
@@ -218,7 +216,7 @@ namespace wyUpdate
                 }
                 catch (UnauthorizedAccessException authException)
                 {
-                    this.log.Error(authException, "Couldn't create automatic updater temp folder (wc). HResult: 0x{0}", authException.HResult.ToString("X2"));
+                    Log.Error(authException, "Couldn't create automatic updater temp folder (wc). HResult: 0x{0}", authException.HResult.ToString("X2"));
 
                     error = clientLang.GeneralUpdateError;
                     errorDetails = "Failed to create the automatic updater temp folder: " + authException.Message;
@@ -228,7 +226,7 @@ namespace wyUpdate
                 }
                 catch (Exception ex)
                 {
-                    this.log.Error(ex, "Couldn't create automatic updater temp folder (wc).");
+                    Log.Error(ex, "Couldn't create automatic updater temp folder (wc).");
                     error = clientLang.GeneralUpdateError;
                     errorDetails = "Failed to create the automatic updater temp folder: " + ex.Message;
 

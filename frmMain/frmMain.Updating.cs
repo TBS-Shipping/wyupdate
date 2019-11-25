@@ -4,6 +4,7 @@ using System.ServiceProcess;
 using System.Windows.Forms;
 using wyDay.Controls;
 using wyUpdate.Common;
+using Serilog;
 
 namespace wyUpdate
 {
@@ -349,14 +350,11 @@ namespace wyUpdate
                 {
                     // If we're updating from a service (i.e. no-ui), then close on *either* success or failure.
                     // If we're in normal mode but the user has specified they want "CloseOnSuccess", then do it.
-
-                    if (log != null)
-                    {
-                        if (frameNum == Frame.UpdatedSuccessfully)
-                            log.Info("Updated successfully.");
-                        else
-                            log.Info(error + " - " + errorDetails);
-                    }
+                    
+                    if (frameNum == Frame.UpdatedSuccessfully)
+                        Log.Information("Updated successfully.");
+                    else
+                        Log.Information(error + " - " + errorDetails);
 
                     // If we're starting a process on error, then start it
                     if (StartOnErr != null && frameNum == Frame.Error)

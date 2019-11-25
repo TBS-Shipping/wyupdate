@@ -7,15 +7,14 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
-using NLog;
+using Serilog;
 using wyUpdate.Common;
 
 namespace wyUpdate.Downloader
 {
     /// <summary>Downloads and resumes files from HTTP, HTTPS, FTP, and File (file://) URLS</summary>
     public class FileDownloader
-    {
-        private Logger _logger = LogManager.GetCurrentClassLogger();
+    {        
         // Block size to download is by default 4K.
         const int BufferSize = 4096;
 
@@ -167,7 +166,7 @@ namespace wyUpdate.Downloader
         void bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             object[] arr = (object[])e.UserState;
-            //this._logger.Debug("ProgressChanged: {0}", arr.Aggregate(string.Empty, (x, y) => x + " " + y));
+            //Log.Debug("ProgressChanged: {0}", arr.Aggregate(string.Empty, (x, y) => x + " " + y));
             ProgressChanged?.Invoke((int)arr[0], (int)arr[1], (string)arr[2], (ProgressStatus)arr[3], arr[4]);
         }
 
@@ -210,7 +209,7 @@ namespace wyUpdate.Downloader
         // Begin downloading the file at the specified url, and save it to the given folder.
         void BeginDownload()
         {
-            _logger.Info("Begin downloading from '{0}'...", this.url);
+            Log.Information("Begin downloading from '{0}'...", this.url);
             DownloadData data = null;
             FileStream fs = null;
 
@@ -224,7 +223,7 @@ namespace wyUpdate.Downloader
                 Stopwatch downloadStopwatch = new Stopwatch();
                 downloadStopwatch.Start();
                 data = DownloadData.Create(url, destFolder);
-                this._logger.Info("Size: {0}", data.TotalDownloadSize);
+                Log.Information("Size: {0}", data.TotalDownloadSize);
                 waitingForResponse = false;
 
                 //reset the adler
@@ -261,7 +260,7 @@ namespace wyUpdate.Downloader
 
                 while ((readCount = data.DownloadStream.Read(buffer, 0, BufferSize)) > 0)
                 {
-                    //this._logger.Debug("Downloading chunk...");
+                    //Log.Debug("Downloading chunk...");
                     // break on cancel
                     if (bw.CancellationPending)
                     {
@@ -302,7 +301,7 @@ namespace wyUpdate.Downloader
 
                 SendDownloadProgressReport(100, this.url);
                 downloadStopwatch.Stop();
-                this._logger.Info("Finished downloading in {0} ({1}ms)", downloadStopwatch.Elapsed, downloadStopwatch.ElapsedMilliseconds);
+                Log.Information("Finished downloading in {0} ({1}ms)", downloadStopwatch.Elapsed, downloadStopwatch.ElapsedMilliseconds);
             }
             catch (UriFormatException e)
             {
@@ -339,7 +338,7 @@ namespace wyUpdate.Downloader
                 ProgressStatus.None,
                 downloadUrl
             };
-            this._logger.Debug("Sending download progress report: ", progressData.Aggregate(string.Empty, (x, y) => x + " " + y));
+            Log.Debug("Sending download progress report: ", progressData.Aggregate(string.Empty, (x, y) => x + " " + y));
             bw.ReportProgress(0, progressData);
         }
 

@@ -5,37 +5,13 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using NLog;
-using NLog.Config;
-using NLog.Targets;
+using Serilog;
 
 namespace wyUpdate
 {
     static class Program
-    {
-        private static Logger _logger = LogManager.GetCurrentClassLogger();
+    {        
         private static string programName = Assembly.GetExecutingAssembly().GetName().Name;
-
-        public static void ConfigureNLog(string logPath, LogLevel level)
-        {
-            // Step 1. Create configuration object 
-            var config = new LoggingConfiguration();
-
-            var fileTarget = new FileTarget();
-            config.AddTarget("file", fileTarget);
-
-            // Step 3. Set target properties 
-            string layout = @"${date:format=HH\:mm\:ss.mmm}|${level}|${callsite}|${threadid}|${logger} -> ${message} ${exception:format=ToString,StackTrace:maxInnerExceptionLevel=5}${newline}";
-            fileTarget.FileName = logPath;
-            fileTarget.Layout = layout;
-
-
-            var rule2 = new LoggingRule("*", level, fileTarget);
-            config.LoggingRules.Add(rule2);
-
-            // Step 5. Activate the configuration
-            LogManager.Configuration = config;
-        }
 
         /// <summary>
         /// The main entry point for the application.
@@ -43,8 +19,12 @@ namespace wyUpdate
         [STAThread]
         static int Main(string[] args)
         {
-            ConfigureNLog("./logs/" + programName + "-${shortdate}.log.txt", LogLevel.Debug);
-            _logger.Debug("{0} is ready...", programName);
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()                
+                .WriteTo.RollingFile($"logs\\{programName}.log.txt",  retainedFileCountLimit: 7)
+                .CreateLogger();
+
+            Log.Debug("{0} is ready...", programName);
             Application.EnableVisualStyles();
 
             frmMain mainForm = new frmMain(args);
@@ -63,6 +43,8 @@ namespace wyUpdate
 
             if (mainForm.IsNewSelf)
                 mutexName.Append('n');
+
+            //MessageBox.Show("Waiting for debugger...");
 
             Mutex mutex = new Mutex(true, mutexName.ToString());
 
